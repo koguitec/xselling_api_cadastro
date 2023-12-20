@@ -1,0 +1,22 @@
+FROM mcr.microsoft.com/azure-functions/python:4-python3.11
+
+USER root
+
+ENV PYTHONUNBUFFERED 1
+
+RUN apt-get update \
+  && apt-get install -y gnupg curl && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add --no-tty - \
+  && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+  && apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc
+RUN mkdir /opt/code
+RUN mkdir /opt/requirements
+WORKDIR /opt/code
+
+ADD requirements /opt/requirements
+RUN pip install -r /opt/requirements/prod.txt
+
+EXPOSE 8000
+
+COPY . .
+
+CMD ["uvicorn", "asgi:app", "--host", "0.0.0.0", "--port", "8000"]

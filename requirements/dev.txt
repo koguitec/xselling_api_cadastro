@@ -1,0 +1,7 @@
+-r test.txt
+pre-commit==3.5.0
+taskipy
+blue
+ruff
+isort
+mypy

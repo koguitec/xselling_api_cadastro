@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  sqlserv-cross-selling:
+    image: mcr.microsoft.com/mssql/server
+    user: root
+    container_name: sqlserv-cross-selling
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      MSSQL_USER: ${MSSQL_USER}
+    ports:
+      - "${MSSQL_PORT}:1433"
+    volumes:
+      - sql_server_data/:/var/opt/mssql/data/:rw
+  web:
+    build:
+      context: ${PWD}
+      dockerfile: docker/web/Dockerfile.local
+    environment:
+      APPLICATION_DB: ${APPLICATION_DB}
+      MSSQL_USER: ${MSSQL_USER}
+      MSSQL_HOSTNAME: "sqlserv-cross-selling"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      MSSQL_PORT: ${MSSQL_PORT}
+    command: gunicorn -b :8000 --reload -k uvicorn.workers.UvicornWorker --timeout 500 asgi:app
+    volumes:
+      - ${PWD}:/opt/code
+  nginx:
+    image: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 8080:8080
+
+volumes:
+  sql_server_data:

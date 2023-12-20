@@ -1,0 +1,11 @@
+-r prod.txt
+coverage
+pytest==7.4.3
+pytest-cov
+pytest-flask
+tox
+pyyaml==5.3.1
+docker-compose
+pylint==3.0.2
+freezegun==1.2.2
+httpx
