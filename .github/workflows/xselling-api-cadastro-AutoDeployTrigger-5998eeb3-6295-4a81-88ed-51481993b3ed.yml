@@ -1,0 +1,42 @@
+name: Trigger auto deployment for xselling-api-cadastro
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - 'docker/web/Dockerfile.production/**'
+    - '.github/workflows/xselling-api-cadastro-AutoDeployTrigger-5998eeb3-6295-4a81-88ed-51481993b3ed.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:
+      
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.XSELLINGAPICADASTRO_AZURE_CREDENTIALS }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}docker/web/Dockerfile.production 
+          registryUrl: xselling.azurecr.io
+          registryUsername: ${{ secrets.XSELLINGAPICADASTRO_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.XSELLINGAPICADASTRO_REGISTRY_PASSWORD }}
+          containerAppName: xselling-api-cadastro
+          resourceGroup: Cross-Selling
+          imageToBuild: xselling.azurecr.io/api_cadastro:${{ github.sha }}
+          dockerfilePath: Dockerfile
+
+     
+
