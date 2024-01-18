@@ -13,7 +13,7 @@ services:
       - "${MSSQL_PORT}:1433"
     volumes:
       - sql_server_data/:/var/opt/mssql/data/:rw
-  web:
+  api_cad:
     build:
       context: ${PWD}
       dockerfile: docker/web/Dockerfile.local
