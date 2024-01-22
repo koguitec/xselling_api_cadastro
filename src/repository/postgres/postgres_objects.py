@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
 def generate_uuid_str() -> str:
@@ -114,14 +114,13 @@ class Regra(SQLModel, table=True):
     regra_categorias: list[RegraCategoria] = Relationship(
         back_populates='regra', sa_relationship_kwargs={'cascade': 'delete'}
     )
-    regra_run_id: int | None = Field(foreign_key='regrarun.id')
+    client_id: int | None = Field(foreign_key='client.id')
 
 
 class RegraRun(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    min_support: float
-    min_threshold: float
-    metric: str
+    algoritmo: str
+    params: dict = Field(sa_column=Column(JSON), default_factory=dict)
     dt_inclusao: datetime = Field(
         default_factory=datetime.utcnow, nullable=False
     )
@@ -130,11 +129,11 @@ class RegraRun(SQLModel, table=True):
 
 class AlgoParams(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    min_support: float
-    min_threshold: float
-    metric: str
+    algoritmo: str
+    params: dict = Field(sa_column=Column(JSON), default_factory=dict)
     dt_inclusao: datetime = Field(
         default_factory=datetime.utcnow, nullable=True
     )
     dt_alteracao: datetime | None = None
+    ativo: bool = True
     client_id: int | None = Field(foreign_key='client.id')

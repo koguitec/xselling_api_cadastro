@@ -40,7 +40,7 @@ and the output of `docker ps` should show three containers running.
 
 - Connect to a Postgres batabase with configurations set in `config/production.json`. **You only need to run this command once!**
 ```bash
-~/cross_selling: python manage.py init-postgres
+~/cross_selling: python manage.py init-mssql
 ```
 if the command executes successfully no messge will appear. If a database already exists you will see `The database cross_selling_db already exists and will not be created`
 
