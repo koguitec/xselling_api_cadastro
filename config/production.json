@@ -1,13 +1,5 @@
 [
     {
-        "name": "FLASK_ENV",
-        "value": "production"
-    },
-    {
-        "name": "FLASK_CONFIG",
-        "value": "production"
-    },
-    {
         "name": "MSSQL_USER",
         "value": "Cross-Selling"
     },
