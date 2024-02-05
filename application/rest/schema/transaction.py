@@ -13,8 +13,18 @@ class Transaction(BaseModel):
     transacao_items: list[Product]
 
 
-class StoreTransactions(BaseModel):
+class TransactionRequest(BaseModel):
     transacoes: list[Transaction]
 
     class ConfigDict:
         extra = 'forbid'
+
+
+class TransactionResponse(BaseModel):
+    id: int
+    code: str
+    cliente_id: int
+    dt_transacao: str
+    dt_inclusao: str
+    data_alteracao: str
+    ativo: bool

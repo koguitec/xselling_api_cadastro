@@ -2,9 +2,12 @@ import json
 
 from fastapi import Request
 from fastapi.responses import Response
-from pydantic import ValidationError
 
-from application.rest.schema.client import ClientSchema, UpdateClientSchema
+from application.rest.schema.client import (
+    ClientRequest,
+    ClientResponse,
+    UpdateClientSchema,
+)
 from src.domain.client import Client
 from src.repository.postgres.postgresrepo_client import PostgresRepoClient
 from src.requests.client_create import build_create_client_request
@@ -19,13 +22,8 @@ from src.use_cases.client_update import client_update_use_case
 from .adapters.request_adapter import HttpRequest, request_adapter
 
 
-async def client_create(request: Request):
-    http_request: HttpRequest = await request_adapter(request)
-    try:
-        client = ClientSchema.parse_raw(http_request.data)
-        client_domain = Client.from_dict(client.dict())
-    except ValidationError as e:
-        return Response({'error': e.errors()}, 400)
+async def client_create(client: ClientRequest) -> ClientResponse:
+    client_domain = Client.from_dict(client.model_dump())
 
     request_obj = build_create_client_request(client_domain)
 
@@ -39,7 +37,7 @@ async def client_create(request: Request):
     )
 
 
-async def client_list(request: Request):
+async def client_list(request: Request) -> list[ClientResponse]:
     http_request: HttpRequest = await request_adapter(request)
 
     qrystr_params = {
@@ -62,14 +60,8 @@ async def client_list(request: Request):
     )
 
 
-async def client_update(request: Request):
-    http_request: HttpRequest = await request_adapter(request)
-    try:
-        client = UpdateClientSchema.parse_raw(http_request.data)
-    except ValidationError as e:
-        return Response({'error': e.errors()}, 400)
-
-    request_obj = build_update_client_request(client.dict(exclude_unset=True))
+async def client_update(client: UpdateClientSchema) -> ClientResponse:
+    request_obj = build_update_client_request(client.model_dump())
 
     repo = PostgresRepoClient()
     response = client_update_use_case(repo, request_obj)

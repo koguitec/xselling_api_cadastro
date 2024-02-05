@@ -29,20 +29,53 @@ from .rest.transaction import transaction_create, transaction_list
 
 router = APIRouter()
 
-router.add_api_route('/clients', endpoint=client_create, methods=['POST'])
-router.add_api_route('/clients', endpoint=client_list, methods=['GET'])
-router.add_api_route('/clients', endpoint=client_update, methods=['PUT'])
-router.add_api_route('/categories', endpoint=category_create, methods=['POST'])
-router.add_api_route('/categories', endpoint=category_list, methods=['GET'])
-router.add_api_route('/categories', endpoint=category_update, methods=['PUT'])
-router.add_api_route('/products', endpoint=product_create, methods=['POST'])
-router.add_api_route('/products', endpoint=product_list, methods=['GET'])
-router.add_api_route('/products', endpoint=product_update, methods=['PUT'])
 router.add_api_route(
-    '/transactions', endpoint=transaction_create, methods=['POST']
+    '/clients', endpoint=client_create, methods=['POST'], tags=['Clientes']
 )
 router.add_api_route(
-    '/transactions', endpoint=transaction_list, methods=['GET']
+    '/clients', endpoint=client_list, methods=['GET'], tags=['Clientes']
+)
+router.add_api_route(
+    '/clients', endpoint=client_update, methods=['PUT'], tags=['Clientes']
+)
+router.add_api_route(
+    '/categories',
+    endpoint=category_create,
+    methods=['POST'],
+    tags=['Categorias'],
+)
+router.add_api_route(
+    '/categories',
+    endpoint=category_list,
+    methods=['GET'],
+    tags=['Categorias'],
+)
+router.add_api_route(
+    '/categories',
+    endpoint=category_update,
+    methods=['PUT'],
+    tags=['Categorias'],
+)
+router.add_api_route(
+    '/products', endpoint=product_create, methods=['POST'], tags=['Produtos']
+)
+router.add_api_route(
+    '/products', endpoint=product_list, methods=['GET'], tags=['Produtos']
+)
+router.add_api_route(
+    '/products', endpoint=product_update, methods=['PUT'], tags=['Produtos']
+)
+router.add_api_route(
+    '/transactions',
+    endpoint=transaction_create,
+    methods=['POST'],
+    tags=['Transações'],
+)
+router.add_api_route(
+    '/transactions',
+    endpoint=transaction_list,
+    methods=['GET'],
+    tags=['Transações'],
 )
 
 

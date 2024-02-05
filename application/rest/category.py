@@ -2,11 +2,11 @@ import json
 
 from fastapi import Request
 from fastapi.responses import Response
-from pydantic import ValidationError
 
 from application.rest.schema.category import (
-    CategorySchema,
-    UpdateCategorySchema,
+    CategoryRequest,
+    CategoryResponse,
+    UpdateCategoryRequest,
 )
 from src.plugins.jwt_plugin import auth_token
 from src.repository.postgres.postgresrepo_category import PostgresRepoCategory
@@ -22,14 +22,8 @@ from src.use_cases.category_update import category_update_use_case
 from .adapters.request_adapter import HttpRequest, request_adapter
 
 
-async def category_create(request: Request):
-    http_request: HttpRequest = await request_adapter(request)
-    try:
-        category = CategorySchema.parse_raw(http_request.data)
-    except ValidationError as e:
-        return Response({'error': e.errors()}, 400)
-
-    request_obj = build_create_category_request(category.dict())
+async def category_create(category: CategoryRequest) -> CategoryResponse:
+    request_obj = build_create_category_request(category.model_dump())
 
     repo = PostgresRepoCategory()
     response = category_create_use_case(repo, request_obj)
@@ -41,7 +35,7 @@ async def category_create(request: Request):
     )
 
 
-async def category_list(request: Request):
+async def category_list(request: Request) -> list[CategoryResponse]:
     http_request: HttpRequest = await request_adapter(request)
     qrystr_params = {
         'filters': {},
@@ -71,16 +65,8 @@ async def category_list(request: Request):
     )
 
 
-async def category_update(request: Request):
-    http_request: HttpRequest = await request_adapter(request)
-    try:
-        category = UpdateCategorySchema.parse_raw(http_request.data)
-    except ValidationError as e:
-        return Response({'error': e.errors()}, 400)
-
-    request_obj = build_update_category_request(
-        category.dict(exclude_unset=True)
-    )
+async def category_update(category: UpdateCategoryRequest) -> CategoryResponse:
+    request_obj = build_update_category_request(category.model_dump())
 
     repo = PostgresRepoCategory()
     response = category_update_use_case(repo, request_obj)

@@ -1,10 +1,12 @@
 import json
 
 from fastapi import Request
-from fastapi.responses import Response
-from pydantic import ValidationError
+from fastapi.responses import JSONResponse, Response
 
-from application.rest.schema.transaction import StoreTransactions
+from application.rest.schema.transaction import (
+    TransactionRequest,
+    TransactionResponse,
+)
 from src.plugins.jwt_plugin import auth_token
 from src.repository.postgres.postgresrepo_transaction import (
     PostgresRepoTransaction,
@@ -19,23 +21,22 @@ from src.use_cases.transaction_list import transaction_list_use_case
 from .adapters.request_adapter import HttpRequest, request_adapter
 
 
-async def transaction_create(request: Request):
+async def transaction_create(
+    transaction: TransactionRequest, request: Request
+):
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        token = http_request.headers
-        client = auth_token.decode_jwt(token['Authorization'])
-    except auth_token.jwt.ExpiredSignatureError:
-        raise
+        client = auth_token.decode_jwt(http_request.headers['Authorization'])
+    except auth_token.jwt.ExpiredSignatureError as e:
+        return Response(
+            json.dumps({'error': str(e)}),
+            media_type='application/json',
+            status_code=401,
+        )
 
-    try:
-        transaction = StoreTransactions.parse_raw(http_request.data)
-    except ValidationError as e:
-        return Response({'error': e.errors()}, 400)
-
-    transaction_dict = transaction.dict()
-
-    transaction_dict.update({'client_id': client['client_id']})
+    transaction_dict = transaction.model_dump()
+    transaction_dict['client_id'] = client['client_id']
 
     request_obj = build_transaction_create_request(transaction_dict)
 
@@ -49,7 +50,7 @@ async def transaction_create(request: Request):
     )
 
 
-async def transaction_list(request: Request):
+async def transaction_list(request: Request) -> list[TransactionResponse]:
     http_request: HttpRequest = await request_adapter(request)
     qrystr_params = {
         'filters': {},

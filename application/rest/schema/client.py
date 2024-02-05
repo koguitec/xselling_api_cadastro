@@ -1,9 +1,7 @@
-from typing import Optional
-
 from pydantic import BaseModel, EmailStr, constr
 
 
-class ClientSchema(BaseModel):
+class ClientRequest(BaseModel):
     """Schema validation for Client"""
 
     razao_social: str
@@ -18,11 +16,23 @@ class UpdateClientSchema(BaseModel):
     """Schema validation for Client"""
 
     id: int
-    code: Optional[str]
-    razao_social: Optional[str]
-    cnpj: Optional[str]
-    email: Optional[str]
-    ativo: Optional[bool]
+    razao_social: str
+    cnpj: str
+    email: str
+    ativo: bool
 
     class ConfigDict:
         extra = 'forbid'
+
+
+class ClientResponse(BaseModel):
+    """Schema validation for Client"""
+
+    id: int
+    code: str
+    razao_social: str
+    cnpj: str
+    email: str
+    dt_inclusao: str
+    dt_alteracao: str
+    ativo: bool

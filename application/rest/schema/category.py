@@ -1,25 +1,34 @@
-from typing import Optional
-
 from pydantic import BaseModel
 
 
-class CategorySchema(BaseModel):
+class CategoryRequest(BaseModel):
     """Schema validatation for category"""
 
     descricao: str
     client_id: int
 
-    class ConfigDict:
+    class Config:
         extra = 'forbid'
 
 
-class UpdateCategorySchema(BaseModel):
+class UpdateCategoryRequest(BaseModel):
     """Schema validatation for upadting a category"""
 
     id: int
-    code: Optional[str]
-    descricao: Optional[str]
-    ativo: Optional[bool]
+    descricao: str
+    ativo: bool
 
-    class ConfigDict:
+    class Config:
         extra = 'forbid'
+
+
+class CategoryResponse(BaseModel):
+    """Schema for category response"""
+
+    id: int
+    code: str
+    descricao: str
+    client_id: int
+    dt_inclusao: str
+    dt_alteracao: str
+    ativo: bool

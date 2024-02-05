@@ -2,9 +2,12 @@ import json
 
 from fastapi import Request
 from fastapi.responses import Response
-from pydantic import ValidationError
 
-from application.rest.schema.product import ProductSchema, UpdateProductSchema
+from application.rest.schema.product import (
+    ProductResponse,
+    ProductSchema,
+    UpdateProductSchema,
+)
 from src.plugins.jwt_plugin import auth_token
 from src.repository.postgres.postgresrepo_product import PostgresRepoProduct
 from src.requests.product_create import build_create_product_request
@@ -19,14 +22,8 @@ from src.use_cases.product_update import product_update_use_case
 from .adapters.request_adapter import HttpRequest, request_adapter
 
 
-async def product_create(request: Request):
-    http_request: HttpRequest = await request_adapter(request)
-    try:
-        product = ProductSchema.parse_raw(http_request.data)
-    except ValidationError as e:
-        return Response({'error': e.errors()}, 400)
-
-    request_obj = build_create_product_request(product.dict())
+async def product_create(product: ProductSchema) -> ProductResponse:
+    request_obj = build_create_product_request(product.model_dumps())
 
     repo = PostgresRepoProduct()
     response = product_create_use_case(repo, request_obj)
@@ -38,7 +35,7 @@ async def product_create(request: Request):
     )
 
 
-async def product_list(request: Request):
+async def product_list(request: Request) -> list[ProductResponse]:
     http_request: HttpRequest = await request_adapter(request)
     qrystr_params = {
         'filters': {},
@@ -68,16 +65,8 @@ async def product_list(request: Request):
     )
 
 
-async def product_update(request: Request):
-    http_request: HttpRequest = await request_adapter(request)
-    try:
-        product = UpdateProductSchema.parse_raw(http_request.data)
-    except ValidationError as e:
-        return Response({'error': e.errors()}, 400)
-
-    request_obj = build_update_product_request(
-        product.dict(exclude_unset=True)
-    )
+async def product_update(product: UpdateProductSchema) -> ProductResponse:
+    request_obj = build_update_product_request(product.model_dumps())
 
     repo = PostgresRepoProduct()
     response = product_update_use_case(repo, request_obj)

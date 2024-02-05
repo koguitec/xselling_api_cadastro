@@ -17,7 +17,7 @@ def build_update_category_request(category: Dict):
     """
     invalid_req = InvalidRequest()
 
-    if 'id' not in category and 'code' not in category:
+    if 'id' not in category:
         invalid_req.add_error('value', 'Must contain id or code to update')
 
     if invalid_req.has_errors():
