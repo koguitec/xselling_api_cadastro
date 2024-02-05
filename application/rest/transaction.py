@@ -1,7 +1,7 @@
 import json
 
 from fastapi import Request
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 
 from application.rest.schema.transaction import (
     TransactionRequest,
@@ -23,7 +23,7 @@ from .adapters.request_adapter import HttpRequest, request_adapter
 
 async def transaction_create(
     transaction: TransactionRequest, request: Request
-):
+) -> list[TransactionResponse]:
     http_request: HttpRequest = await request_adapter(request)
 
     try:

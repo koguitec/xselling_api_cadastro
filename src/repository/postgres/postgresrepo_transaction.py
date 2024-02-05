@@ -66,14 +66,16 @@ class PostgresRepoTransaction(BasePostgresRepo):
     def create_transaction(self, new_transaction: dict):
         session = self._create_session()
 
+        transactions_list = []
         try:
-            for transaction in new_transaction['transactions']:
+            for transaction in new_transaction['transacoes']:
                 db_transaction = PgTransaction(
                     # code=transaction["code"],
                     client_id=new_transaction['client_id'],
                     dt_transacao=transaction['dt_transacao'],
                 )
                 session.add(db_transaction)
+                transactions_list.append(db_transaction)
                 session.flush()
 
                 for item in transaction['transacao_items']:
@@ -90,4 +92,4 @@ class PostgresRepoTransaction(BasePostgresRepo):
         else:
             session.commit()
 
-        # TODO retornar alguma informação, ex: número de transações adicionadas
+        return self._create_transaction_objects(transactions_list)
