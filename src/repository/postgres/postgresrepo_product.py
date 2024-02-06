@@ -69,6 +69,15 @@ class PostgresRepoProduct(BasePostgresRepo):
             if 'sku__eq' in filters:
                 query = query.filter(PgProduct.sku == filters['sku__eq'])
 
+            if 'page__eq' in filters and 'items_per_page__eq' in filters:
+                page = int(filters['page__eq'])
+                items_per_page = int(filters['items_per_page__eq'])
+                query = (
+                    query.order_by('id')
+                    .limit(items_per_page)
+                    .offset((page - 1) * items_per_page)
+                )
+
         return self._create_product_objects(query.all())
 
     def create_product(self, product: Dict) -> product.Product:

@@ -21,6 +21,8 @@ def build_transaction_list_request(filters=None):
         'ativo__eq',
         'produto_id__eq',
         'client_id__eq',
+        'page__eq',
+        'items_per_page__eq',
     ]
     invalid_req = InvalidRequest()
 

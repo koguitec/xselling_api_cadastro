@@ -15,7 +15,14 @@ def build_product_list_request(filters=None):
         Object: Return InvalidRequest if errors, otherwise, returns
         ValidRequest,
     """
-    accepted_filters = ['id__eq', 'code__eq', 'ativo__eq', 'client_id__eq']
+    accepted_filters = [
+        'id__eq',
+        'code__eq',
+        'ativo__eq',
+        'client_id__eq',
+        'page__eq',
+        'items_per_page__eq',
+    ]
     invalid_req = InvalidRequest()
 
     if filters is not None:
