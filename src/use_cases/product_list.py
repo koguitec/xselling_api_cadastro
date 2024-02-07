@@ -23,6 +23,6 @@ def product_list_use_case(repo, request):
         return build_response_from_invalid_request(request)
     try:
         products = repo.list_product(filters=request.filters)
-        return ResponseSuccess(products)
+        return ResponseSuccess(products, type_='Produtos')
     except Exception as exc:
         return ResponseFailure(ResponseTypes.SYSTEM_ERROR, exc)

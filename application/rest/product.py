@@ -1,10 +1,11 @@
 import json
 
-from fastapi import Request
+from fastapi import Header, Query
 from fastapi.responses import Response
 
 from application.rest.schema.product import (
     ProductResponse,
+    ProductResponseList,
     ProductSchema,
     UpdateProductSchema,
 )
@@ -35,23 +36,40 @@ async def product_create(product: ProductSchema) -> ProductResponse:
     )
 
 
-async def product_list(request: Request) -> list[ProductResponse]:
-    http_request: HttpRequest = await request_adapter(request)
+async def product_list(
+    authorization: str = Header(default=None),
+    id__eq: str = Query(None, alias='filter_id__eq'),
+    code__eq: str = Query(None, alias='filter_code__eq'),
+    ativo__eq: bool = Query(None, alias='filter_ativo__eq'),
+    page__eq: int = Query(None, alias='filter_page__eq'),
+    items_per_page__eq: int = Query(None, alias='filter_items_per_page__eq'),
+) -> ProductResponseList:
+
+    try:
+        client = auth_token.decode_jwt(authorization)
+    except auth_token.jwt.ExpiredSignatureError as e:
+        return Response(
+            json.dumps({'error': str(e)}),
+            media_type='application/json',
+            status_code=401,
+        )
+
     qrystr_params = {
         'filters': {},
     }
 
-    try:
-        token = http_request.headers
-        client = auth_token.decode_jwt(token['Authorization'])
-    except auth_token.jwt.ExpiredSignatureError:
-        raise
+    filters = {
+        'id__eq': id__eq,
+        'code__eq': code__eq,
+        'ativo__eq': ativo__eq,
+        'client_id__eq': client['client_id'],
+        'page__eq': page__eq,
+        'items_per_page__eq': items_per_page__eq,
+    }
 
-    qrystr_params['filters'].update({'client_id__eq': client['client_id']})
-
-    for arg, values in http_request.query_params.items():
-        if arg.startswith('filter_'):
-            qrystr_params['filters'][arg.replace('filter_', '')] = values
+    for arg, values in filters.items():
+        if values is not None:
+            qrystr_params['filters'][arg] = values
 
     request_obj = build_product_list_request(qrystr_params['filters'])
 

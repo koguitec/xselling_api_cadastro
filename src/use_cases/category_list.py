@@ -24,6 +24,6 @@ def category_list_use_case(repo, request):
         return build_response_from_invalid_request(request)
     try:
         categories = repo.list_category(filters=request.filters)
-        return ResponseSuccess(categories)
+        return ResponseSuccess(categories, type_='Categorias')
     except Exception as exc:
         return ResponseFailure(ResponseTypes.SYSTEM_ERROR, exc)

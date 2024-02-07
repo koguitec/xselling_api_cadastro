@@ -38,3 +38,11 @@ class ProductResponse(BaseModel):
     dt_inclusao: str
     dt_alteracao: str
     ativo: bool
+
+
+class ProductResponseList(BaseModel):
+    """Schema for category list response"""
+
+    type: str
+    count: int
+    attributes: list[ProductResponse]

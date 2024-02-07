@@ -32,3 +32,11 @@ class CategoryResponse(BaseModel):
     dt_inclusao: str
     dt_alteracao: str
     ativo: bool
+
+
+class CategoryResponseList(BaseModel):
+    """Schema for category list response"""
+
+    type: str
+    count: int
+    attributes: list[CategoryResponse]

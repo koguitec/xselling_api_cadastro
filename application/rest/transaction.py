@@ -1,11 +1,12 @@
 import json
 
-from fastapi import Request
+from fastapi import Header, Query
 from fastapi.responses import Response
 
 from application.rest.schema.transaction import (
     TransactionRequest,
     TransactionResponse,
+    TransactionResponseList,
 )
 from src.plugins.jwt_plugin import auth_token
 from src.repository.postgres.postgresrepo_transaction import (
@@ -22,12 +23,12 @@ from .adapters.request_adapter import HttpRequest, request_adapter
 
 
 async def transaction_create(
-    transaction: TransactionRequest, request: Request
+    transaction: TransactionRequest,
+    authorization: str = Header(default=None),
 ) -> list[TransactionResponse]:
-    http_request: HttpRequest = await request_adapter(request)
 
     try:
-        client = auth_token.decode_jwt(http_request.headers['Authorization'])
+        client = auth_token.decode_jwt(authorization)
     except auth_token.jwt.ExpiredSignatureError as e:
         return Response(
             json.dumps({'error': str(e)}),
@@ -50,15 +51,38 @@ async def transaction_create(
     )
 
 
-async def transaction_list(request: Request) -> list[TransactionResponse]:
-    http_request: HttpRequest = await request_adapter(request)
+async def transaction_list(
+    authorization: str = Header(default=None),
+    id__eq: str = Query(None, alias='filter_id__eq'),
+    code__eq: str = Query(None, alias='filter_code__eq'),
+    ativo__eq: bool = Query(None, alias='filter_ativo__eq'),
+    produto_id__eq: bool = Query(None, alias='filter_produto_id__eq'),
+    page__eq: int = Query(None, alias='filter_page__eq'),
+    items_per_page__eq: int = Query(None, alias='filter_items_per_page__eq'),
+) -> TransactionResponseList:
+
+    try:
+        client = auth_token.decode_jwt(authorization)
+    except auth_token.jwt.ExpiredSignatureError:
+        raise
+
     qrystr_params = {
         'filters': {},
     }
 
-    for arg, values in http_request.query_params.items():
-        if arg.startswith('filter_'):
-            qrystr_params['filters'][arg.replace('filter_', '')] = values
+    filters = {
+        'id__eq': id__eq,
+        'code__eq': code__eq,
+        'ativo__eq': ativo__eq,
+        'produto_id__eq': produto_id__eq,
+        'client_id__eq': client['client_id'],
+        'page__eq': page__eq,
+        'items_per_page__eq': items_per_page__eq,
+    }
+
+    for arg, values in filters.items():
+        if values is not None:
+            qrystr_params['filters'][arg] = values
 
     request_obj = build_transaction_list_request(qrystr_params['filters'])
 

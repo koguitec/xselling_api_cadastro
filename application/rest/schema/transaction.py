@@ -28,3 +28,11 @@ class TransactionResponse(BaseModel):
     dt_inclusao: str
     data_alteracao: str
     ativo: bool
+
+
+class TransactionResponseList(BaseModel):
+    """Schema for category list response"""
+
+    type: str
+    count: int
+    attributes: list[TransactionResponse]

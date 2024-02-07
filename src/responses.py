@@ -43,9 +43,17 @@ class ResponseFailure:
 class ResponseSuccess:
     """Class for managing response success"""
 
-    def __init__(self, value=None):
+    def __init__(self, value=None, type_: str = None):
         self.type = ResponseTypes.SUCCESS
-        self.value = value
+
+        if type_:
+            self.value = {
+                'type': type_,
+                'count': len(value),
+                'attributes': value,
+            }
+        else:
+            self.value = value
 
     def __bool__(self):
         return True
