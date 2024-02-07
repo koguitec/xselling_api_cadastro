@@ -12,7 +12,5 @@ services:
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
       MSSQL_PORT: ${MSSQL_PORT}
     command: gunicorn -b :8000 --reload -k uvicorn.workers.UvicornWorker --timeout 500 asgi:app
-    ports:
-      - "8000:8000"
     volumes:
       - ${PWD}:/opt/code
