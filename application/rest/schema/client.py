@@ -36,3 +36,11 @@ class ClientResponse(BaseModel):
     dt_inclusao: str
     dt_alteracao: str
     ativo: bool
+
+
+class ClientResponseList(BaseModel):
+    """Schema for category list response"""
+
+    type: str
+    count: int
+    attributes: list[ClientResponse]

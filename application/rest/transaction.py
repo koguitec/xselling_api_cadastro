@@ -1,7 +1,8 @@
 import json
 
-from fastapi import Header, Query
-from fastapi.responses import Response
+from fastapi import Header, Query, Request
+from fastapi.responses import JSONResponse, Response
+from pydantic import ValidationError
 
 from application.rest.schema.transaction import (
     TransactionRequest,
@@ -20,23 +21,32 @@ from src.use_cases.transaction_create import transaction_create_use_case
 from src.use_cases.transaction_list import transaction_list_use_case
 
 from .adapters.request_adapter import HttpRequest, request_adapter
+from .utils.validation_reponse import format_pydantic_error
 
 
-async def transaction_create(
-    transaction: TransactionRequest,
-    authorization: str = Header(default=None),
-) -> list[TransactionResponse]:
+async def transaction_create(request: Request) -> list[TransactionResponse]:
+
+    http_request: HttpRequest = await request_adapter(request)
 
     try:
-        client = auth_token.decode_jwt(authorization)
+        client = auth_token.decode_jwt(http_request.headers['Authorization'])
     except auth_token.jwt.ExpiredSignatureError as e:
         return Response(
-            json.dumps({'error': str(e)}),
+            json.dumps({'error': {'type': 'Autenticação', 'message': str(e)}}),
             media_type='application/json',
             status_code=401,
         )
 
-    transaction_dict = transaction.model_dump()
+    try:
+        data = TransactionRequest.model_validate(json.loads(http_request.data))
+    except ValidationError as e:
+        return JSONResponse(
+            format_pydantic_error(e),
+            media_type='application/json',
+            status_code=422,
+        )
+
+    transaction_dict = data.model_dump()
     transaction_dict['client_id'] = client['client_id']
 
     request_obj = build_transaction_create_request(transaction_dict)
@@ -51,18 +61,12 @@ async def transaction_create(
     )
 
 
-async def transaction_list(
-    authorization: str = Header(default=None),
-    id__eq: str = Query(None, alias='filter_id__eq'),
-    code__eq: str = Query(None, alias='filter_code__eq'),
-    ativo__eq: bool = Query(None, alias='filter_ativo__eq'),
-    produto_id__eq: bool = Query(None, alias='filter_produto_id__eq'),
-    page__eq: int = Query(None, alias='filter_page__eq'),
-    items_per_page__eq: int = Query(None, alias='filter_items_per_page__eq'),
-) -> TransactionResponseList:
+async def transaction_list(request: Request) -> TransactionResponseList:
 
+    http_request: HttpRequest = await request_adapter(request)
+    
     try:
-        client = auth_token.decode_jwt(authorization)
+        client = auth_token.decode_jwt(http_request.headers['Authorization'])
     except auth_token.jwt.ExpiredSignatureError:
         raise
 
@@ -70,19 +74,11 @@ async def transaction_list(
         'filters': {},
     }
 
-    filters = {
-        'id__eq': id__eq,
-        'code__eq': code__eq,
-        'ativo__eq': ativo__eq,
-        'produto_id__eq': produto_id__eq,
-        'client_id__eq': client['client_id'],
-        'page__eq': page__eq,
-        'items_per_page__eq': items_per_page__eq,
-    }
+    qrystr_params['filters']['client_id'] = client['client_id']
 
-    for arg, values in filters.items():
-        if values is not None:
-            qrystr_params['filters'][arg] = values
+    for arg, values in http_request.query_params.items():
+        if arg.startswith('filter_'):
+            qrystr_params['filters'][arg.replace('filter_', '')] = values
 
     request_obj = build_transaction_list_request(qrystr_params['filters'])
 

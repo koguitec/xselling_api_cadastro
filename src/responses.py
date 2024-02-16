@@ -6,9 +6,9 @@ class ResponseTypes:
 
     PARAMETERS_ERROR = 'ParametersError'
     RESOURCE_ERROR = 'ResourceError'
-    SYSTEM_ERROR = 'SystemError'
+    SYSTEM_ERROR = 'ServerError'
     SUCCESS = 'Success'
-    DOMAIN_ERROR = 'Erro de domínio já existente'
+    DOMAIN_ERROR = 'DomainAlreadyExistsError'
 
 
 STATUS_CODE = {
@@ -34,7 +34,7 @@ class ResponseFailure:
 
     @property
     def value(self):
-        return {'type': self.type, 'message': self.message}
+        return {'error': {'type': self.type, 'message': self.message}}
 
     def __bool__(self):
         return False

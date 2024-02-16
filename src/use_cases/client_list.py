@@ -24,6 +24,6 @@ def client_list_use_case(repo, request):
         return build_response_from_invalid_request(request)
     try:
         clients = repo.list_client(filters=request.filters)
-        return ResponseSuccess(clients)
+        return ResponseSuccess(clients, type_='Clientes')
     except Exception as exc:
         return ResponseFailure(ResponseTypes.SYSTEM_ERROR, exc)

@@ -1,7 +1,8 @@
 import json
 
-from fastapi import Header, Query
-from fastapi.responses import Response
+from fastapi import Header, Query, Request
+from fastapi.responses import JSONResponse, Response
+from pydantic import ValidationError
 
 from application.rest.schema.product import (
     ProductResponse,
@@ -21,10 +22,23 @@ from src.use_cases.product_list import product_list_use_case
 from src.use_cases.product_update import product_update_use_case
 
 from .adapters.request_adapter import HttpRequest, request_adapter
+from .utils.validation_reponse import format_pydantic_error
 
 
-async def product_create(product: ProductSchema) -> ProductResponse:
-    request_obj = build_create_product_request(product.model_dumps())
+async def product_create(request: Request) -> ProductResponse:
+
+    http_request: HttpRequest = await request_adapter(request)
+
+    try:
+        data = ProductSchema.model_validate(json.loads(http_request.data))
+    except ValidationError as e:
+        return JSONResponse(
+            format_pydantic_error(e),
+            media_type='application/json',
+            status_code=422,
+        )
+
+    request_obj = build_create_product_request(data.model_dumps())
 
     repo = PostgresRepoProduct()
     response = product_create_use_case(repo, request_obj)
@@ -36,17 +50,11 @@ async def product_create(product: ProductSchema) -> ProductResponse:
     )
 
 
-async def product_list(
-    authorization: str = Header(default=None),
-    id__eq: str = Query(None, alias='filter_id__eq'),
-    code__eq: str = Query(None, alias='filter_code__eq'),
-    ativo__eq: bool = Query(None, alias='filter_ativo__eq'),
-    page__eq: int = Query(None, alias='filter_page__eq'),
-    items_per_page__eq: int = Query(None, alias='filter_items_per_page__eq'),
-) -> ProductResponseList:
+async def product_list(request: Request) -> ProductResponseList:
+    http_request: HttpRequest = await request_adapter(request)
 
     try:
-        client = auth_token.decode_jwt(authorization)
+        client = auth_token.decode_jwt(http_request.headers['Authorization'])
     except auth_token.jwt.ExpiredSignatureError as e:
         return Response(
             json.dumps({'error': str(e)}),
@@ -58,18 +66,11 @@ async def product_list(
         'filters': {},
     }
 
-    filters = {
-        'id__eq': id__eq,
-        'code__eq': code__eq,
-        'ativo__eq': ativo__eq,
-        'client_id__eq': client['client_id'],
-        'page__eq': page__eq,
-        'items_per_page__eq': items_per_page__eq,
-    }
+    qrystr_params['filters']['client_id'] = client['client_id']
 
-    for arg, values in filters.items():
-        if values is not None:
-            qrystr_params['filters'][arg] = values
+    for arg, values in http_request.query_params.items():
+        if arg.startswith('filter_'):
+            qrystr_params['filters'][arg.replace('filter_', '')] = values
 
     request_obj = build_product_list_request(qrystr_params['filters'])
 
@@ -83,8 +84,22 @@ async def product_list(
     )
 
 
-async def product_update(product: UpdateProductSchema) -> ProductResponse:
-    request_obj = build_update_product_request(product.model_dumps())
+async def product_update(request: Request) -> ProductResponse:
+
+    http_request: HttpRequest = await request_adapter(request)
+
+    try:
+        data = UpdateProductSchema.model_validate(
+            json.loads(http_request.data)
+        )
+    except ValidationError as e:
+        return JSONResponse(
+            format_pydantic_error(e),
+            media_type='application/json',
+            status_code=422,
+        )
+
+    request_obj = build_update_product_request(data.model_dumps())
 
     repo = PostgresRepoProduct()
     response = product_update_use_case(repo, request_obj)

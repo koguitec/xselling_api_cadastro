@@ -1,7 +1,8 @@
 import json
 
-from fastapi import Header, Query
-from fastapi.responses import Response
+from fastapi import Header, Query, Request
+from fastapi.responses import JSONResponse, Response
+from pydantic import ValidationError
 
 from application.rest.schema.category import (
     CategoryRequest,
@@ -21,10 +22,23 @@ from src.use_cases.category_list import category_list_use_case
 from src.use_cases.category_update import category_update_use_case
 
 from .adapters.request_adapter import HttpRequest, request_adapter
+from .utils.validation_reponse import format_pydantic_error
 
 
-async def category_create(category: CategoryRequest) -> CategoryResponse:
-    request_obj = build_create_category_request(category.model_dump())
+async def category_create(request: Request) -> CategoryResponse:
+
+    http_request: HttpRequest = await request_adapter(request)
+
+    try:
+        data = CategoryRequest.model_validate(json.loads(http_request.data))
+    except ValidationError as e:
+        return JSONResponse(
+            format_pydantic_error(e),
+            media_type='application/json',
+            status_code=422,
+        )
+
+    request_obj = build_create_category_request(data.model_dump())
 
     repo = PostgresRepoCategory()
     response = category_create_use_case(repo, request_obj)
@@ -36,18 +50,11 @@ async def category_create(category: CategoryRequest) -> CategoryResponse:
     )
 
 
-async def category_list(
-    authorization: str = Header(default=None),
-    id__eq: str = Query(None, alias='filter_id__eq'),
-    code__eq: str = Query(None, alias='filter_code__eq'),
-    ativo__eq: bool = Query(None, alias='filter_ativo__eq'),
-    descricao__eq: str = Query(None, alias='filter_descricao__eq'),
-    page__eq: int = Query(None, alias='filter_page__eq'),
-    items_per_page__eq: int = Query(None, alias='filter_items_per_page__eq'),
-) -> CategoryResponseList:
+async def category_list(request: Request) -> CategoryResponseList:
+    http_request: HttpRequest = await request_adapter(request)
 
     try:
-        client = auth_token.decode_jwt(authorization)
+        client = auth_token.decode_jwt(http_request.headers['Authorization'])
     except auth_token.jwt.ExpiredSignatureError as e:
         return Response(
             json.dumps({'error': str(e)}),
@@ -59,19 +66,11 @@ async def category_list(
         'filters': {},
     }
 
-    filters = {
-        'id__eq': id__eq,
-        'code__eq': code__eq,
-        'ativo__eq': ativo__eq,
-        'client_id__eq': client['client_id'],
-        'descricao__eq': descricao__eq,
-        'page__eq': page__eq,
-        'items_per_page__eq': items_per_page__eq,
-    }
+    qrystr_params['filters']['client_id'] = client['client_id']
 
-    for arg, values in filters.items():
-        if values is not None:
-            qrystr_params['filters'][arg] = values
+    for arg, values in http_request.query_params.items():
+        if arg.startswith('filter_'):
+            qrystr_params['filters'][arg.replace('filter_', '')] = values
 
     request_obj = build_category_list_request(filters=qrystr_params['filters'])
 
@@ -85,8 +84,22 @@ async def category_list(
     )
 
 
-async def category_update(category: UpdateCategoryRequest) -> CategoryResponse:
-    request_obj = build_update_category_request(category.model_dump())
+async def category_update(request: Request) -> CategoryResponse:
+
+    http_request: HttpRequest = await request_adapter(request)
+
+    try:
+        data = UpdateCategoryRequest.model_validate(
+            json.loads(http_request.data)
+        )
+    except ValidationError as e:
+        return JSONResponse(
+            format_pydantic_error(e),
+            media_type='application/json',
+            status_code=422,
+        )
+
+    request_obj = build_update_category_request(data.model_dump())
 
     repo = PostgresRepoCategory()
     response = category_update_use_case(repo, request_obj)

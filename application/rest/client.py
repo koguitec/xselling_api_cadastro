@@ -1,11 +1,13 @@
 import json
 
 from fastapi import Request
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
+from pydantic import ValidationError
 
 from application.rest.schema.client import (
     ClientRequest,
     ClientResponse,
+    ClientResponseList,
     UpdateClientSchema,
 )
 from src.domain.client import Client
@@ -20,11 +22,23 @@ from src.use_cases.client_list import client_list_use_case
 from src.use_cases.client_update import client_update_use_case
 
 from .adapters.request_adapter import HttpRequest, request_adapter
+from .utils.validation_reponse import format_pydantic_error
 
 
-async def client_create(client: ClientRequest) -> ClientResponse:
-    client_domain = Client.from_dict(client.model_dump())
+async def client_create(request: Request) -> ClientResponse:
 
+    http_request: HttpRequest = await request_adapter(request)
+
+    try:
+        data = ClientRequest.model_validate(json.loads(http_request.data))
+    except ValidationError as e:
+        return JSONResponse(
+            format_pydantic_error(e),
+            media_type='application/json',
+            status_code=422,
+        )
+
+    client_domain = Client.from_dict(data.model_dump())
     request_obj = build_create_client_request(client_domain)
 
     repo = PostgresRepoClient()
@@ -37,7 +51,7 @@ async def client_create(client: ClientRequest) -> ClientResponse:
     )
 
 
-async def client_list(request: Request) -> list[ClientResponse]:
+async def client_list(request: Request) -> ClientResponseList:
     http_request: HttpRequest = await request_adapter(request)
 
     qrystr_params = {
@@ -60,8 +74,21 @@ async def client_list(request: Request) -> list[ClientResponse]:
     )
 
 
-async def client_update(client: UpdateClientSchema) -> ClientResponse:
-    request_obj = build_update_client_request(client.model_dump())
+async def client_update(request: Request) -> ClientResponse:
+
+    http_request: HttpRequest = await request_adapter(request)
+
+    try:
+        data = UpdateClientSchema.model_validate(json.loads(http_request.data))
+    except ValidationError as e:
+        return JSONResponse(
+            format_pydantic_error(e),
+            media_type='application/json',
+            status_code=422,
+        )
+
+    client_domain = Client.from_dict(data.model_dump())
+    request_obj = build_update_client_request(client_domain)
 
     repo = PostgresRepoClient()
     response = client_update_use_case(repo, request_obj)
