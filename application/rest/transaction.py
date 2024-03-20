@@ -64,7 +64,7 @@ async def transaction_create(request: Request) -> list[TransactionResponse]:
 async def transaction_list(request: Request) -> TransactionResponseList:
 
     http_request: HttpRequest = await request_adapter(request)
-    
+
     try:
         client = auth_token.decode_jwt(http_request.headers['Authorization'])
     except auth_token.jwt.ExpiredSignatureError:

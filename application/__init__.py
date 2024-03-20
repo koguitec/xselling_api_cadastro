@@ -29,10 +29,16 @@ from application.rest.schema.category import (
 from application.rest.schema.client import ClientRequest, UpdateClientSchema
 from application.rest.schema.product import ProductSchema, UpdateProductSchema
 from application.rest.schema.transaction import TransactionRequest
+from src.validators.recomendacao import (
+    BadRequestError,
+    NotFoundError,
+    UnauthorizedError,
+)
 
 from .rest.category import category_create, category_list, category_update
 from .rest.client import client_create, client_list, client_update
 from .rest.product import product_create, product_list, product_update
+from .rest.recomendacao import recomendacao_list
 from .rest.schema.error import (
     CategoryDomainError,
     ClientDomainError,
@@ -204,8 +210,8 @@ router.add_api_route(
     tags=['Categorias'],
     responses={
         422: {'model': UnprocessableEntityError},
-        500: {'model': InternalServerError}
-        },
+        500: {'model': InternalServerError},
+    },
     openapi_extra={
         'requestBody': {
             'content': {
@@ -288,8 +294,8 @@ router.add_api_route(
     tags=['Produtos'],
     responses={
         422: {'model': UnprocessableEntityError},
-        500: {'model': InternalServerError}
-        },
+        500: {'model': InternalServerError},
+    },
     openapi_extra={
         'requestBody': {
             'content': {
@@ -379,6 +385,42 @@ router.add_api_route(
             },
         ]
     },
+)
+
+# RECOMENDAÇÃO
+router.add_api_route(
+    '/regras-ia-recomendacao',
+    endpoint=recomendacao_list,
+    methods=['POST'],
+    responses={
+        400: {'model': BadRequestError},
+        401: {'model': UnauthorizedError},
+        404: {'model': NotFoundError},
+        422: {'model': UnprocessableEntityError},
+        500: {'model': InternalServerError},
+    },
+    name='Recomendação de produtos baseado em regras de IA.',
+    openapi_extra={
+        'requestBody': {
+            'content': {
+                'application/json': {
+                    'schema': {
+                        'required': ['algoritmo', 'produtos_sku'],
+                        'type': 'object',
+                        'properties': {
+                            'algoritmo': {'type': 'string'},
+                            'produtos_sku': {
+                                'type': 'array',
+                                'items': {'type': 'string'},
+                            },
+                        },
+                    }
+                }
+            },
+            'required': True,
+        },
+    },
+    tags=['Recomendação de produtos'],
 )
 
 

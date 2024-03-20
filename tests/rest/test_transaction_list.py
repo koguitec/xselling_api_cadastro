@@ -27,8 +27,6 @@ def test_get(mock_use_case, client):
 
     http_response = client.get('/transactions')
 
-    print(http_response.status_code, flush=True)
-
     assert json.loads(http_response.data.decode('utf-8')) == [transaction_dict]
 
     mock_use_case.assert_called()

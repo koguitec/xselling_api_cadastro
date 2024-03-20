@@ -11,6 +11,11 @@ services:
       MSSQL_HOSTNAME: ${MSSQL_HOSTNAME}
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
       MSSQL_PORT: ${MSSQL_PORT}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PORT: ${REDIS_PORT}
     command: gunicorn -b :8000 --reload -k uvicorn.workers.UvicornWorker --timeout 500 asgi:app
+    ports:
+      - 8080:8000
     volumes:
       - ${PWD}:/opt/code

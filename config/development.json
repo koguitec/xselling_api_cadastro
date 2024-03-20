@@ -18,5 +18,17 @@
     {
         "name": "APPLICATION_DB",
         "value": "db-cross-selling-dev"
+    },
+    {
+        "name": "REDIS_HOST",
+        "value": "redis-cpq-dev2-brazilsouth-001.redis.cache.windows.net"
+    },
+    {
+        "name": "REDIS_PORT",
+        "value": "6379"
+    },
+    {
+        "name": "REDIS_PASSWORD",
+        "value": "dxulhnod6JkSk9BNrELHT9sjq6NoHsCNaAzCaFoZC0s="
     }
 ]
