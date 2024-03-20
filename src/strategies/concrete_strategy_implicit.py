@@ -18,7 +18,9 @@ class ImplicitRecommenderList(AlgorithmStrategyInterface):
 
     def execute(self, items_sku: list, client_id: str):
 
-        category_names: list[str] = self._search_items_on_cache(items_sku)
+        category_names: list[str] = self._search_items_on_cache(
+            items_sku, client_id
+        )
 
         item_to_index: dict = self._search_on_cache(client_id, 'item_to_index')
 
@@ -30,13 +32,16 @@ class ImplicitRecommenderList(AlgorithmStrategyInterface):
 
         ids, scores = model.similar_items(*selected_items)
 
-        return self._format_output(item_to_index, ids, scores)
+        return self._format_output(item_to_index, ids, scores, client_id)
 
-    def _search_items_on_cache(self, items_sku: list):
-        sku_to_item = self._repo_cache.get_hash(CACHE_HASH, 'sku_to_item')
+    def _search_items_on_cache(self, items_sku: list, client_id: str):
+        client_sku_to_item = str(client_id) + '_sku_to_item'
+        sku_to_item = self._repo_cache.get_hash(CACHE_HASH, client_sku_to_item)
 
         if sku_to_item is None:
-            raise CacheEmptyError('Mapper sku_to_item não encontrado no cache')
+            raise CacheEmptyError(
+                f'Mapper {client_sku_to_item} não encontrado no cache'
+            )
 
         sku_to_item = json.loads(sku_to_item)
 
@@ -68,7 +73,7 @@ class ImplicitRecommenderList(AlgorithmStrategyInterface):
             if item in category_names
         ]
 
-    def _format_output(self, item_to_index, ids, scores) -> dict:
+    def _format_output(self, item_to_index, ids, scores, client_id) -> dict:
 
         item_to_score = {
             item: round(float(score), 2)
@@ -77,13 +82,14 @@ class ImplicitRecommenderList(AlgorithmStrategyInterface):
             )
         }
 
+        client_cat_to_item = str(client_id) + '_cat_id_to_item'
         cat_id_to_prods = self._repo_cache.get_hash(
-            CACHE_HASH, 'cat_id_to_items'
+            CACHE_HASH, client_cat_to_item
         )
 
         if cat_id_to_prods is None:
             raise CacheEmptyError(
-                'Mapper cat_id_to_items não encontrado no cache'
+                f'Mapper {client_cat_to_item} não encontrado no cache'
             )
 
         cat_id_to_prods = json.loads(cat_id_to_prods)

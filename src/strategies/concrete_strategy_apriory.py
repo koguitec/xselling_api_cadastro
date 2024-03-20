@@ -14,7 +14,9 @@ class AprioriRecommenderList(AlgorithmStrategyInterface):
         self._repo_cache = RedisRepository()
 
     def execute(self, items_sku, client_id):
-        categoria_ids = self._search_categorias_on_cache(items_sku=items_sku)
+        categoria_ids = self._search_categorias_on_cache(
+            items_sku=items_sku, client_id=client_id
+        )
 
         regras = self._search_regras_on_cache(
             categoria_ids=categoria_ids, client_id=client_id
@@ -23,11 +25,15 @@ class AprioriRecommenderList(AlgorithmStrategyInterface):
             regras=regras, client_id=client_id
         )
         recomendacao = self._search_produtos_recomendados_on_cache(
-            consequente_ids=consequente_ids, items_sku=items_sku
+            consequente_ids=consequente_ids,
+            items_sku=items_sku,
+            client_id=client_id,
         )
         return self._format_response(recomendacao=recomendacao, regras=regras)
 
-    def _search_categorias_on_cache(self, items_sku: list[str]) -> list[int]:
+    def _search_categorias_on_cache(
+        self, items_sku: list[str], client_id: str
+    ) -> list[int]:
         """Busca das categorias dos produtos
 
         Args:
@@ -39,16 +45,19 @@ class AprioriRecommenderList(AlgorithmStrategyInterface):
         Returns:
             list[int]: Lista com ids das categorias
         """
-        sku_to_prod = self._repo_cache.get_hash(CACHE_HASH, 'sku_to_item')
+        client_sku_to_item = str(client_id) + '_sku_to_item'
+        sku_to_item = self._repo_cache.get_hash(CACHE_HASH, client_sku_to_item)
 
-        if sku_to_prod is None:
-            raise CacheEmptyError('Mapper sku_to_item não encontrado no cache')
+        if sku_to_item is None:
+            raise CacheEmptyError(
+                f'Mapper {client_sku_to_item} não encontrado no cache'
+            )
 
-        sku_to_prod = json.loads(sku_to_prod)
+        sku_to_item = json.loads(sku_to_item)
 
         # Using a list comprehension to retrieve 'id' values for the specified keys
         category_ids: list[int] = [
-            sku_to_prod[key]['id'] for key in sku_to_prod if key in items_sku
+            sku_to_item[key]['id'] for key in sku_to_item if key in items_sku
         ]
 
         if category_ids == []:
@@ -121,7 +130,7 @@ class AprioriRecommenderList(AlgorithmStrategyInterface):
         return list(set(chain(*matching_consequentes)))
 
     def _search_produtos_recomendados_on_cache(
-        self, consequente_ids: list[int], items_sku: list[str]
+        self, consequente_ids: list[int], items_sku: list[str], client_id: str
     ) -> list[dict]:
         """Busca de produtos recomendados
 
@@ -134,13 +143,15 @@ class AprioriRecommenderList(AlgorithmStrategyInterface):
         Returns:
             list[dict]: Lista de dicionários com produtos recomendados
         """
+
+        client_sku_to_item = str(client_id) + '_sku_to_item'
         cat_id_to_prods = self._repo_cache.get_hash(
-            CACHE_HASH, 'cat_id_to_items'
+            CACHE_HASH, client_sku_to_item
         )
 
         if cat_id_to_prods is None:
             raise CacheEmptyError(
-                'Mapper cat_id_to_items não encontrado no cache'
+                f'Mapper {client_sku_to_item} não encontrado no cache'
             )
 
         cat_id_to_prods = json.loads(cat_id_to_prods)

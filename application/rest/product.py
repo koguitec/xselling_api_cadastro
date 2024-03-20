@@ -4,6 +4,7 @@ from fastapi import Header, Query, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import ValidationError
 
+from application.rest.cache_service.cache_service import CacheService
 from application.rest.schema.product import (
     ProductResponse,
     ProductResponseList,
@@ -31,17 +32,27 @@ async def product_create(request: Request) -> ProductResponse:
 
     try:
         data = ProductSchema.model_validate(json.loads(http_request.data))
+        client = auth_token.decode_jwt(http_request.headers['Authorization'])
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),
             media_type='application/json',
             status_code=422,
         )
+    except auth_token.jwt.ExpiredSignatureError as e:
+        return Response(
+            json.dumps({'error': str(e)}),
+            media_type='application/json',
+            status_code=401,
+        )
 
     request_obj = build_create_product_request(data.model_dumps())
 
     repo = PostgresRepoProduct()
     response = product_create_use_case(repo, request_obj)
+
+    if response.type == 200:
+        CacheService.update_client_items(client['client_id'])
 
     return Response(
         json.dumps(response.value, cls=ProductJsonEncoder),
@@ -92,17 +103,27 @@ async def product_update(request: Request) -> ProductResponse:
         data = UpdateProductSchema.model_validate(
             json.loads(http_request.data)
         )
+        client = auth_token.decode_jwt(http_request.headers['Authorization'])
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),
             media_type='application/json',
             status_code=422,
         )
+    except auth_token.jwt.ExpiredSignatureError as e:
+        return Response(
+            json.dumps({'error': str(e)}),
+            media_type='application/json',
+            status_code=401,
+        )
 
     request_obj = build_update_product_request(data.model_dumps())
 
     repo = PostgresRepoProduct()
     response = product_update_use_case(repo, request_obj)
+
+    if response.type == 200:
+        CacheService.update_client_items(client['client_id'])
 
     return Response(
         json.dumps(response.value, cls=ProductJsonEncoder),
