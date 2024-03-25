@@ -21,7 +21,7 @@
     },
     {
         "name": "REDIS_HOST",
-        "value": "redis-cpq-dev2-brazilsouth-001.redis.cache.windows.net"
+        "value": "redis-cpq-dev.redis.cache.windows.net"
     },
     {
         "name": "REDIS_PORT",
@@ -29,6 +29,6 @@
     },
     {
         "name": "REDIS_PASSWORD",
-        "value": "dxulhnod6JkSk9BNrELHT9sjq6NoHsCNaAzCaFoZC0s="
+        "value": "tLV9WTcWvfGKguidNnfedOaA7bJdJR3B8AzCaMELVWs="
     }
 ]

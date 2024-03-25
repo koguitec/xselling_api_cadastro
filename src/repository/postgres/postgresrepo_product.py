@@ -3,7 +3,6 @@
 # pylint: disable=c0116
 from typing import Dict, List
 
-from sqlalchemy.orm import joinedload
 from sqlmodel import select
 
 from src.domain import product

@@ -1,74 +1,130 @@
 import json
 
-from pandas import DataFrame
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from src.repository.cache.redisrepo_regra import RedisRepository
 from src.repository.postgres.base_postgresrepo import BasePostgresRepo
 
+CLIENT_ITEM_INFO_HASH = 'cross_selling_sku_to_item_info_client_id_'
+CLIENT_CAT_TO_ITEM_MAPPER = 'cross_selling_cat_id_to_item_client_id_'
+
 
 class CacheService:
-    @staticmethod
-    def update_client_items(client_id: str) -> None:
-        repo = BasePostgresRepo()
-        repo_cache = RedisRepository()
-        query = f"""SELECT
-                        p.sku, c.id, c.descricao, p.nome
-                    FROM category c
-                    INNER JOIN product p
-                    ON c.id = p.categoria_id
-                    WHERE c.client_id = {client_id}
-                    AND c.ativo = 1
-                    AND p.ativo = 1;"""
+    def __init__(self) -> None:
+        self._repo_db = BasePostgresRepo()
+        self._repo_cache = RedisRepository()
 
-        with repo.engine.begin() as connection:
-            result = connection.exec_driver_sql(query).fetchall()
-            df = DataFrame(result)
-        sku_to_prod = (
-            df.groupby('sku', group_keys=False)
-            .apply(
-                lambda group: group.drop('sku', axis=1).to_dict(
-                    orient='records'
-                )[0]
-            )
-            .to_dict()
-        )
-        repo_cache.insert_hash(
-            'cross_selling',
-            f'{client_id}_sku_to_item',
-            json.dumps(sku_to_prod),
-        )
+    def load_client_items(self, client_id: str) -> None:
+        """Full load of client's items from database to cache store.
+        The data is a dictionary containg info of client's items with the item
+        sku as the dictionary key.
 
-    def update_client_cat_to_items(client_id: str) -> None:
-        repo = BasePostgresRepo()
-        repo_cache = RedisRepository()
-        query = f"""SELECT
+        Example:
+        ...
+        'AM7008': {
+            'descricao': 'AGULHA CANETA DE INSULINA',
+            'id': 224,
+            'nome': 'AGULHA CANETA INSUL 31G 5MM (JH)'
+            },
+        'AM7009': {
+            'descricao': 'AGULHA CANETA DE INSULINA',
+            'id': 224,
+            'nome': 'AGULHA CANETA INSUL 30G 8MM (JH)'
+            },
+        ...
+
+        Args:
+            client_id (str): Client's ID
+
+        return:
+            None
+        """
+
+        # Optimized SQL query that retrieves only the necessary columns
+        query = """
+                SELECT p.sku, c.id as categoria_id, c.descricao, p.nome
+                FROM category c
+                        JOIN product p ON c.id = p.categoria_id
+                WHERE c.client_id = :client_id AND c.ativo = 1 AND p.ativo = 1;
+                """
+
+        # Execute query and directly load into a hashtable format
+        sku_to_item = {}
+        with Session(self._repo_db.engine) as session:
+            session.bulk
+            result = session.execute(
+                text(query), {'client_id': client_id}
+            ).all()
+            for sku, id, descricao, nome in result:
+                sku_to_item[sku] = {
+                    'id': id,
+                    'descricao': descricao,
+                    'nome': nome,
+                }
+
+        # Pipeline Redis insertions
+        pipeline = self._repo_cache.pipeline()
+        hash_name = CLIENT_ITEM_INFO_HASH + client_id
+        for sku, item in sku_to_item.items():
+            pipeline.hset(hash_name, sku, json.dumps(item))
+        pipeline.execute()
+
+    def load_client_mapper_cat_to_items(self, client_id: str) -> None:
+        query = """
+                SELECT
                     c.id as id_categoria,
                     p.nome,
                     p.descricao as descricao_produto,
                     c.descricao as descricao_categoria,
                     p.sku,
-                    categoria_id
+                    p.categoria_id
                 FROM category c 
-                INNER JOIN product p 
-                ON c.id = p.categoria_id
-                AND p.Ativo = 1
-                WHERE c.client_id = {client_id};"""
+                INNER JOIN product p ON c.id = p.categoria_id
+                WHERE c.client_id = :client_id AND p.Ativo = 1
+                """
 
-        with repo.engine.begin() as connection:
-            result = connection.exec_driver_sql(query).fetchall()
-            df = DataFrame(result)
+        with Session(self._repo_db.engine) as session:
+            result = session.execute(
+                text(query), {'client_id': client_id}
+            ).all()
 
-        cat_id_to_prods = (
-            df.groupby('id_categoria')
-            .apply(
-                lambda group: group.drop('id_categoria', axis=1).to_dict(
-                    orient='records'
-                )
-            )
-            .to_dict()
-        )
-        repo_cache.insert_hash(
-            'cross_selling',
-            f'{client_id}_cat_id_to_item',
-            json.dumps(cat_id_to_prods),
+        # Transform the rows into a dictionary grouped by 'id_categoria'
+        cat_id_to_prods = {}
+        for row in result:
+            # Deconstruct the row into columns.
+            (
+                id_categoria,
+                nome,
+                descricao_produto,
+                descricao_categoria,
+                sku,
+                categoria_id,
+            ) = row
+
+            # Create the product record excluding the id_categoria as it's used for grouping.
+            product_record = {
+                'nome': nome,
+                'descricao_produto': descricao_produto,
+                'descricao_categoria': descricao_categoria,
+                'sku': sku,
+                'categoria_id': categoria_id,
+            }
+
+            # Add the product record to the appropriate list in the dictionary.
+            if id_categoria not in cat_id_to_prods:
+                cat_id_to_prods[id_categoria] = []
+            cat_id_to_prods[id_categoria].append(product_record)
+
+        # Pipeline Redis insertions
+        pipeline = self._repo_cache.pipeline()
+        hash_name = CLIENT_CAT_TO_ITEM_MAPPER + client_id
+        for cat, items in cat_id_to_prods.items():
+            pipeline.hset(hash_name, cat, json.dumps(items))
+        pipeline.execute()
+
+    def update_or_create_client_item(self, client_id: str, item: dict) -> None:
+        sku = item.pop('sku')
+        self._repo_cache.insert_hash(
+            CLIENT_ITEM_INFO_HASH + client_id, sku, item
         )

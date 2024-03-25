@@ -18,5 +18,17 @@
     {
         "name": "APPLICATION_DB",
         "value": "cross_selling_local_db"
+    },
+    {
+        "name": "REDIS_HOST",
+        "value": "cache"
+    },
+    {
+        "name": "REDIS_PORT",
+        "value": "6379"
+    },
+    {
+        "name": "REDIS_PASSWORD",
+        "value": "redis"
     }
 ]
