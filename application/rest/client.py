@@ -11,6 +11,7 @@ from application.rest.schema.client import (
     UpdateClientRequest,
 )
 from src.domain.client import Client
+from src.errors.error_handler import handle_errors
 from src.repository.postgres.postgresrepo_client import PostgresRepoClient
 from src.requests.client_create import build_create_client_request
 from src.requests.client_list import build_client_list_request
@@ -32,12 +33,9 @@ async def client_create(request: Request) -> ClientResponse:
 
     try:
         data = ClientRequest.model_validate(http_request.json).model_dump()
-    except ValidationError as e:
-        return JSONResponse(
-            format_pydantic_error(e),
-            media_type='application/json',
-            status_code=422,
-        )
+    except Exception as exc:
+        http_response = handle_errors(exc)
+        return JSONResponse(http_response.body, http_response.status_code)
 
     client_domain = Client.from_dict(data)
     request_obj = build_create_client_request(client_domain)
@@ -82,12 +80,9 @@ async def client_update(request: Request) -> ClientResponse:
         data = UpdateClientRequest.model_validate(
             http_request.json
         ).model_dump()
-    except ValidationError as e:
-        return JSONResponse(
-            format_pydantic_error(e),
-            media_type='application/json',
-            status_code=422,
-        )
+    except Exception as exc:
+        http_response = handle_errors(exc)
+        return JSONResponse(http_response.body, http_response.status_code)
 
     client_domain = Client.from_dict(data)
     request_obj = build_update_client_request(client_domain)

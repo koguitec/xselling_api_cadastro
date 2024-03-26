@@ -11,6 +11,7 @@ from application.rest.schema.product import (
     ProductResponseList,
     UpdateProductRequest,
 )
+from src.errors.error_handler import handle_errors
 from src.plugins.jwt_plugin import auth_token
 from src.repository.postgres.postgresrepo_product import PostgresRepoProduct
 from src.requests.product_create import build_create_product_request
@@ -33,18 +34,9 @@ async def product_create(request: Request) -> ProductResponse:
     try:
         data = ProductRequest.model_validate(http_request.json).model_dump()
         data['client'] = auth_token.decode_jwt(http_request)
-    except ValidationError as e:
-        return JSONResponse(
-            format_pydantic_error(e),
-            media_type='application/json',
-            status_code=422,
-        )
-    except auth_token.jwt.ExpiredSignatureError as e:
-        return Response(
-            json.dumps({'error': str(e)}),
-            media_type='application/json',
-            status_code=401,
-        )
+    except Exception as exc:
+        http_response = handle_errors(exc)
+        return JSONResponse(http_response.body, http_response.status_code)
 
     request_obj = build_create_product_request(data)
     repo = PostgresRepoProduct()
@@ -62,12 +54,9 @@ async def product_list(request: Request) -> ProductResponseList:
 
     try:
         client = auth_token.decode_jwt(http_request)
-    except auth_token.jwt.ExpiredSignatureError as e:
-        return Response(
-            json.dumps({'error': str(e)}),
-            media_type='application/json',
-            status_code=401,
-        )
+    except Exception as exc:
+        http_response = handle_errors(exc)
+        return JSONResponse(http_response.body, http_response.status_code)
 
     qrystr_params = {
         'filters': {},
@@ -99,18 +88,9 @@ async def product_update(request: Request) -> ProductResponse:
             http_request.json
         ).model_dump()
         data['client'] = auth_token.decode_jwt(http_request)
-    except ValidationError as e:
-        return JSONResponse(
-            format_pydantic_error(e),
-            media_type='application/json',
-            status_code=422,
-        )
-    except auth_token.jwt.ExpiredSignatureError as e:
-        return Response(
-            json.dumps({'error': str(e)}),
-            media_type='application/json',
-            status_code=401,
-        )
+    except Exception as exc:
+        http_response = handle_errors(exc)
+        return JSONResponse(http_response.body, http_response.status_code)
 
     request_obj = build_update_product_request(data.model_dumps())
     repo = PostgresRepoProduct()

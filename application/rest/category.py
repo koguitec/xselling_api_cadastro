@@ -10,6 +10,7 @@ from application.rest.schema.category import (
     CategoryResponseList,
     UpdateCategoryRequest,
 )
+from src.errors.error_handler import handle_errors
 from src.plugins.jwt_plugin import auth_token
 from src.repository.postgres.postgresrepo_category import PostgresRepoCategory
 from src.requests.category_create import build_create_category_request
@@ -32,18 +33,9 @@ async def category_create(request: Request) -> CategoryResponse:
     try:
         data = CategoryRequest.model_validate(http_request.json).model_dump()
         data['client'] = auth_token.decode_jwt(http_request)
-    except ValidationError as e:
-        return JSONResponse(
-            format_pydantic_error(e),
-            media_type='application/json',
-            status_code=422,
-        )
-    except auth_token.jwt.ExpiredSignatureError as e:
-        return Response(
-            json.dumps({'error': str(e)}),
-            media_type='application/json',
-            status_code=401,
-        )
+    except Exception as exc:
+        http_response = handle_errors(exc)
+        return JSONResponse(http_response.body, http_response.status_code)
 
     request_obj = build_create_category_request(data)
     repo = PostgresRepoCategory()
@@ -61,12 +53,9 @@ async def category_list(request: Request) -> CategoryResponseList:
 
     try:
         client = auth_token.decode_jwt(http_request)
-    except auth_token.jwt.ExpiredSignatureError as e:
-        return Response(
-            json.dumps({'error': str(e)}),
-            media_type='application/json',
-            status_code=401,
-        )
+    except Exception as exc:
+        http_response = handle_errors(exc)
+        return JSONResponse(http_response.body, http_response.status_code)
 
     qrystr_params = {
         'filters': {},
@@ -98,12 +87,9 @@ async def category_update(request: Request) -> CategoryResponse:
             http_request.json
         ).model_dump()
         data['client'] = auth_token.decode_jwt(http_request)
-    except ValidationError as e:
-        return JSONResponse(
-            format_pydantic_error(e),
-            media_type='application/json',
-            status_code=422,
-        )
+    except Exception as exc:
+        http_response = handle_errors(exc)
+        return JSONResponse(http_response.body, http_response.status_code)
 
     request_obj = build_update_category_request(data.model_dump())
     repo = PostgresRepoCategory()

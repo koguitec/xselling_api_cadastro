@@ -9,6 +9,7 @@ from application.rest.schema.transaction import (
     TransactionResponse,
     TransactionResponseList,
 )
+from src.errors.error_handler import handle_errors
 from src.plugins.jwt_plugin import auth_token
 from src.repository.postgres.postgresrepo_transaction import (
     PostgresRepoTransaction,
@@ -33,18 +34,9 @@ async def transaction_create(request: Request) -> list[TransactionResponse]:
             http_request.json
         ).model_dump()
         data['client'] = auth_token.decode_jwt(http_request)
-    except auth_token.jwt.ExpiredSignatureError as e:
-        return Response(
-            json.dumps({'error': {'type': 'Autenticação', 'message': str(e)}}),
-            media_type='application/json',
-            status_code=401,
-        )
-    except ValidationError as e:
-        return JSONResponse(
-            format_pydantic_error(e),
-            media_type='application/json',
-            status_code=422,
-        )
+    except Exception as exc:
+        http_response = handle_errors(exc)
+        return JSONResponse(http_response.body, http_response.status_code)
 
     request_obj = build_transaction_create_request(data)
     repo = PostgresRepoTransaction()
