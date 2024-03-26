@@ -46,7 +46,19 @@ class ResponseSuccess:
     def __init__(self, value=None, type_: str = None):
         self.type = ResponseTypes.SUCCESS
 
-        if type_:
+        if type_ == 'insertion':
+            self.value = {
+                'status': 'success',
+                'message': 'Insertion of objects completed successfully.',
+                'total_inserted': value,
+            }
+        if type_ == 'update':
+            self.value = {
+                'status': 'success',
+                'message': 'Update of objects completed successfully.',
+                'total_updated': value,
+            }
+        elif type_:
             self.value = {
                 'type': type_,
                 'count': len(value),

@@ -46,7 +46,7 @@ async def product_create(request: Request) -> ProductResponse:
             status_code=401,
         )
 
-    request_obj = build_create_product_request(data.model_dumps())
+    request_obj = build_create_product_request(data.model_dump())
 
     repo = PostgresRepoProduct()
     response = product_create_use_case(repo, request_obj)

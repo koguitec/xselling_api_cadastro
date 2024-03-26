@@ -1,11 +1,17 @@
 from pydantic import BaseModel
 
 
-class CategoryRequest(BaseModel):
+class Category(BaseModel):
     """Schema validatation for category"""
 
     descricao: str
     client_id: int
+
+
+class CategoryRequest(BaseModel):
+    """Schema validatation for category"""
+
+    categories: list[Category]
 
     class Config:
         extra = 'forbid'

@@ -77,21 +77,24 @@ class PostgresRepoProduct(BasePostgresRepo):
                     .offset((page - 1) * items_per_page)
                 )
 
+            if 'nome__in' in filters:
+                query = query.filter(PgProduct.nome.in_(filters['nome__in']))
+
         return self._create_product_objects(query.all())
 
-    def create_product(self, product: Dict) -> product.Product:
+    def create_product(self, products: list) -> int | None:
         session = self._create_session()
 
         try:
-            pg_product_obj = PgProduct(**product)
-            session.add(pg_product_obj)
+            session.bulk_insert_mappings(
+                PgProduct, [PgProduct(**product) for product in products]
+            )
         except:
             session.rollback()
             raise
         else:
             session.commit()
-
-        return self._create_product_objects([pg_product_obj])[0]
+            return len(products)
 
     def update_product(self, new_product_data: Dict) -> product.Product:
         session = self._create_session()

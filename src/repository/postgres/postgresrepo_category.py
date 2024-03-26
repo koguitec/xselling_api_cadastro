@@ -61,10 +61,8 @@ class PostgresRepoCategory(BasePostgresRepo):
             )
 
         if 'descricao__eq' in filters:
-            query = (
-                session.query(PgCategory)
-                .filter(text('descricao LIKE :descricao'))
-                .params(descricao=f"%{filters['descricao__eq']}%")
+            query = query.filter(
+                PgCategory.descricao == filters['descricao__eq']
             )
 
         if 'page__eq' in filters and 'items_per_page__eq' in filters:
@@ -76,21 +74,33 @@ class PostgresRepoCategory(BasePostgresRepo):
                 .offset((page - 1) * items_per_page)
             )
 
+        if 'descricao__ae' in filters:
+            query = (
+                session.query(PgCategory)
+                .filter(text('descricao LIKE :descricao'))
+                .params(descricao=f"%{filters['descricao__eq']}%")
+            )
+
+        if 'descricao__in' in filters:
+            query = query.filter(
+                PgCategory.descricao.in_(filters['descricao__in'])
+            )
+
         return self._create_category_objects(query.all())
 
-    def create_category(self, new_category: Dict) -> category.Category:
+    def create_category(self, categories: list) -> int | None:
         session = self._create_session()
 
         try:
-            pg_category_obj = PgCategory(**new_category)
-            session.add(pg_category_obj)
+            session.bulk_insert_mappings(
+                PgCategory, [PgCategory(**category) for category in categories]
+            )
         except:
             session.rollback()
             raise
         else:
             session.commit()
-
-        return self._create_category_objects([pg_category_obj])[0]
+            return len(categories)
 
     def update_category(self, new_category_data: Dict) -> category.Category:
         session = self._create_session()

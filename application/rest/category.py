@@ -31,6 +31,7 @@ async def category_create(request: Request) -> CategoryResponse:
 
     try:
         data = CategoryRequest.model_validate(json.loads(http_request.data))
+        client = auth_token.decode_jwt(http_request.headers['Authorization'])
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),

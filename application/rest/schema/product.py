@@ -1,13 +1,19 @@
 from pydantic import BaseModel
 
 
-class ProductSchema(BaseModel):
+class Product(BaseModel):
     """Schema validatation for product"""
 
     nome: str
     descricao: str
     sku: str
     categoria_id: int
+
+
+class ProductSchema(BaseModel):
+    """Schema validatation for product"""
+
+    products: list[Product]
 
     class ConfigDict:
         extra = 'forbid'
