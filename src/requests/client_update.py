@@ -30,6 +30,5 @@ def build_update_client_request(client: Client):
     if invalid_req.has_errors():
         return invalid_req
 
-    client_dict = client.to_dict()
-    client_dict.update({'dt_alteracao': datetime.now()})
+    client.dt_alteracao = datetime.now()
     return ValidRequest(data=client)
