@@ -30,17 +30,26 @@ async def category_create(request: Request) -> CategoryResponse:
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        data = CategoryRequest.model_validate(json.loads(http_request.data))
-        client = auth_token.decode_jwt(http_request.headers['Authorization'])
+        data = CategoryRequest.model_validate(
+            json.loads(http_request.data)
+        ).model_dump()
+        data['client'] = auth_token.decode_jwt(
+            http_request.headers['Authorization']
+        )
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),
             media_type='application/json',
             status_code=422,
         )
+    except auth_token.jwt.ExpiredSignatureError as e:
+        return Response(
+            json.dumps({'error': str(e)}),
+            media_type='application/json',
+            status_code=401,
+        )
 
-    request_obj = build_create_category_request(data.model_dump())
-
+    request_obj = build_create_category_request(data)
     repo = PostgresRepoCategory()
     response = category_create_use_case(repo, request_obj)
 

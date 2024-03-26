@@ -70,7 +70,9 @@ class CacheService:
             pipeline.hset(hash_name, sku, json.dumps(item))
         pipeline.execute()
 
-    def load_client_mapper_cat_to_items(self, client_id: str) -> None:
+    def load_client_mapper_cat_to_items(
+        self, client_id: str, items: list = None
+    ) -> None:
         query = """
                 SELECT
                     c.id as id_categoria,
@@ -83,6 +85,10 @@ class CacheService:
                 INNER JOIN product p ON c.id = p.categoria_id
                 WHERE c.client_id = :client_id AND p.Ativo = 1
                 """
+
+        if items is not None:
+            new_items_list: list = [product['sku'] for product in items]
+            query += f'AND p.sku in {tuple(new_items_list) if len(new_items_list) > 1 else (new_items_list[0], new_items_list[0])}'
 
         with Session(self._repo_db.engine) as session:
             result = session.execute(
@@ -118,12 +124,18 @@ class CacheService:
 
         # Pipeline Redis insertions
         pipeline = self._repo_cache.pipeline()
-        hash_name = CLIENT_CAT_TO_ITEM_MAPPER + client_id
+        hash_name = CLIENT_CAT_TO_ITEM_MAPPER + str(client_id)
         for cat, items in cat_id_to_prods.items():
             pipeline.hset(hash_name, cat, json.dumps(items))
         pipeline.execute()
 
-    def update_client_items_in_cache(self, client_id: str, items: list) -> None:
+    def update_client_items_in_cache(
+        self, client_id: str, items: list
+    ) -> None:
+
+        # Update items per category in cache
+        self.load_client_mapper_cat_to_items(client_id=client_id, items=items)
+
         # Pipeline Redis insertions
         pipeline = self._repo_cache.pipeline()
         hash_name = CLIENT_ITEM_INFO_HASH + str(client_id)

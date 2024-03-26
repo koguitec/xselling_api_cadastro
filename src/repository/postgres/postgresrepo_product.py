@@ -80,6 +80,9 @@ class PostgresRepoProduct(BasePostgresRepo):
             if 'nome__in' in filters:
                 query = query.filter(PgProduct.nome.in_(filters['nome__in']))
 
+            if 'sku__in' in filters:
+                query = query.filter(PgProduct.sku.in_(filters['sku__in']))
+
         return self._create_product_objects(query.all())
 
     def create_product(self, products: list) -> int | None:

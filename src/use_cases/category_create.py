@@ -1,3 +1,5 @@
+from application.rest.cache_service.cache_service import CacheService
+from src.repository.postgres.postgresrepo_product import PostgresRepoProduct
 from src.responses import (
     ResponseFailure,
     ResponseSuccess,
@@ -6,7 +8,7 @@ from src.responses import (
 )
 
 
-def category_create_use_case(repo, request):
+def category_create_use_case(repo: PostgresRepoProduct, request):
     """Use case logic
 
     Args:
@@ -22,18 +24,26 @@ def category_create_use_case(repo, request):
     if not request:
         return build_response_from_invalid_request(request)
     try:
+        categories: list = request.data['categories']
+        client_id: str = request.data['client']['client_id']
+
         category_exists = repo.list_category(
             filters={
                 'descricao__in': [data['descricao'] for data in request.data],
             }
         )
         if category_exists:
-            categories = [category.descricao for category in category_exists]
+            categories_names = [
+                category.descricao for category in category_exists
+            ]
             return ResponseFailure(
                 ResponseTypes.DOMAIN_ERROR,
-                f'Categoria(s): {categories} já cadastrada(s)',
+                f'Categoria(s): {categories_names} já cadastrada(s)',
             )
-        client = repo.create_category(request.data)
-        return ResponseSuccess(client, type_='insertion')
+        result = repo.create_category(categories)
+        CacheService().update_client_items_in_cache(
+            client_id=client_id, items=categories
+        )
+        return ResponseSuccess(result, type_='insertion')
     except Exception as exc:
         return ResponseFailure(ResponseTypes.SYSTEM_ERROR, exc)

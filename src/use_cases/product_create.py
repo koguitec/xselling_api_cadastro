@@ -29,7 +29,7 @@ def product_create_use_case(repo: PostgresRepoProduct, request):
 
         product_exists = repo.list_product(
             filters={
-                'nome__in': [product['nome'] for product in products],
+                'sku__in': [product['sku'] for product in products],
             }
         )
 

@@ -10,7 +10,7 @@ class RedisRepository:
         self._redis_conn = Redis(
             host=os.environ['REDIS_HOST'],
             port=os.environ['REDIS_PORT'],
-            password=os.environ['REDIS_PASSWORD'],
+            # password=os.environ['REDIS_PASSWORD'],
         )
 
     def insert(self, key: str, value: any) -> None:

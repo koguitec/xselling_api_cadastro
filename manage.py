@@ -18,7 +18,7 @@ def setenv(variable, default):
 
 
 # Forced the variable APPLICATION_CONFIG to be production if not specified
-setenv('APPLICATION_CONFIG', 'production')
+setenv('APPLICATION_CONFIG', os.getenv('CROSS_SELLING', 'local'))
 
 APPLICATION_CONFIG_PATH = 'config'
 DOCKER_PATH = 'docker'
