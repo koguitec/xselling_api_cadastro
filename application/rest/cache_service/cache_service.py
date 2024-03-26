@@ -123,8 +123,11 @@ class CacheService:
             pipeline.hset(hash_name, cat, json.dumps(items))
         pipeline.execute()
 
-    def update_or_create_client_item(self, client_id: str, item: dict) -> None:
-        sku = item.pop('sku')
-        self._repo_cache.insert_hash(
-            CLIENT_ITEM_INFO_HASH + client_id, sku, item
-        )
+    def update_client_items_in_cache(self, client_id: str, items: list) -> None:
+        # Pipeline Redis insertions
+        pipeline = self._repo_cache.pipeline()
+        hash_name = CLIENT_ITEM_INFO_HASH + str(client_id)
+        for product in items:
+            sku = product.pop('sku')
+            pipeline.hset(hash_name, sku, json.dumps(product))
+        pipeline.execute()

@@ -52,7 +52,7 @@ class ResponseSuccess:
                 'message': 'Insertion of objects completed successfully.',
                 'total_inserted': value,
             }
-        if type_ == 'update':
+        elif type_ == 'update':
             self.value = {
                 'status': 'success',
                 'message': 'Update of objects completed successfully.',

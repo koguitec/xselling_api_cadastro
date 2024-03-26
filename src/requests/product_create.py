@@ -21,4 +21,4 @@ def build_create_product_request(products: dict):
     if invalid_req.has_errors():
         return invalid_req
 
-    return ValidRequest(data=products['products'])
+    return ValidRequest(data=products)

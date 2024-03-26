@@ -31,8 +31,12 @@ async def product_create(request: Request) -> ProductResponse:
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        data = ProductSchema.model_validate(json.loads(http_request.data))
-        client = auth_token.decode_jwt(http_request.headers['Authorization'])
+        data = ProductSchema.model_validate(
+            json.loads(http_request.data)
+        ).model_dump()
+        data['client'] = auth_token.decode_jwt(
+            http_request.headers['Authorization']
+        )
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),
@@ -46,13 +50,9 @@ async def product_create(request: Request) -> ProductResponse:
             status_code=401,
         )
 
-    request_obj = build_create_product_request(data.model_dump())
-
+    request_obj = build_create_product_request(data)
     repo = PostgresRepoProduct()
     response = product_create_use_case(repo, request_obj)
-
-    if response.type == 200:
-        CacheService.update_client_items(client['client_id'])
 
     return Response(
         json.dumps(response.value, cls=ProductJsonEncoder),
