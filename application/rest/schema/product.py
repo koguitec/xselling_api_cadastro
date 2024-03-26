@@ -10,7 +10,7 @@ class Product(BaseModel):
     categoria_id: int
 
 
-class ProductSchema(BaseModel):
+class ProductRequest(BaseModel):
     """Schema validatation for product"""
 
     products: list[Product]
@@ -19,7 +19,7 @@ class ProductSchema(BaseModel):
         extra = 'forbid'
 
 
-class UpdateProductSchema(BaseModel):
+class UpdateProductRequest(BaseModel):
     """Schema validatation for updating a product"""
 
     id: int

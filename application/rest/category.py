@@ -30,12 +30,8 @@ async def category_create(request: Request) -> CategoryResponse:
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        data = CategoryRequest.model_validate(
-            json.loads(http_request.data)
-        ).model_dump()
-        data['client'] = auth_token.decode_jwt(
-            http_request.headers['Authorization']
-        )
+        data = CategoryRequest.model_validate(http_request.json).model_dump()
+        data['client'] = auth_token.decode_jwt(http_request)
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),
@@ -64,7 +60,7 @@ async def category_list(request: Request) -> CategoryResponseList:
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        client = auth_token.decode_jwt(http_request.headers['Authorization'])
+        client = auth_token.decode_jwt(http_request)
     except auth_token.jwt.ExpiredSignatureError as e:
         return Response(
             json.dumps({'error': str(e)}),
@@ -83,7 +79,6 @@ async def category_list(request: Request) -> CategoryResponseList:
             qrystr_params['filters'][arg.replace('filter_', '')] = values
 
     request_obj = build_category_list_request(filters=qrystr_params['filters'])
-
     repo = PostgresRepoCategory()
     response = category_list_use_case(repo, request_obj)
 
@@ -100,8 +95,9 @@ async def category_update(request: Request) -> CategoryResponse:
 
     try:
         data = UpdateCategoryRequest.model_validate(
-            json.loads(http_request.data)
-        )
+            http_request.json
+        ).model_dump()
+        data['client'] = auth_token.decode_jwt(http_request)
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),
@@ -110,7 +106,6 @@ async def category_update(request: Request) -> CategoryResponse:
         )
 
     request_obj = build_update_category_request(data.model_dump())
-
     repo = PostgresRepoCategory()
     response = category_update_use_case(repo, request_obj)
 

@@ -29,7 +29,9 @@ def category_create_use_case(repo: PostgresRepoProduct, request):
 
         category_exists = repo.list_category(
             filters={
-                'descricao__in': [data['descricao'] for data in request.data],
+                'descricao__in': [
+                    category['descricao'] for category in categories
+                ],
             }
         )
         if category_exists:

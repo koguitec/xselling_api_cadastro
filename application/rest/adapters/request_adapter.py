@@ -47,7 +47,9 @@ async def request_adapter(request: Request) -> HttpRequest:
     http_request = HttpRequest(
         headers=request.headers,
         data=await request.body(),
-        json=await request.json() if request.method == 'POST' else None,
+        json=await request.json()
+        if request.method in ['POST', 'PUT']
+        else None,
         query_params=request.query_params,
         path_params=request.path_params,
         url=request.url,

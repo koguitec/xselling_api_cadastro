@@ -81,17 +81,18 @@ class PostgresRepoClient(BasePostgresRepo):
 
         return self._create_client_objects([pg_client_obj])[0]
 
-    def update_client(self, new_client_data: Dict) -> client.Client:
+    def update_client(self, new_client_data: client.Client) -> client.Client:
         session = self._create_session()
 
         try:
             statement = select(PgClient).where(
-                PgClient.id == new_client_data['id']
+                PgClient.id == new_client_data.id
             )
             pg_client_obj = session.exec(statement).one()
 
-            for field, value in new_client_data.items():
-                setattr(pg_client_obj, field, value)
+            for field, value in new_client_data.to_dict().items():
+                if value is not None:
+                    setattr(pg_client_obj, field, value)
         except:
             session.rollback()
             raise

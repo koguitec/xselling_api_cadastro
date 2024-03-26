@@ -23,8 +23,10 @@ class AuthTokenPlugin:
             expire_date,
         )
 
-    def decode_jwt(self, data: str) -> dict:
-        return self.jwt.decode(data, self.SECRET, self.ALGORITHM)
+    def decode_jwt(self, http_request: HttpRequest) -> dict:
+        return self.jwt.decode(
+            http_request.header['Authorization'], self.SECRET, self.ALGORITHM
+        )
 
     def validate_token(self, http_request: HttpRequest):
         try:

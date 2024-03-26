@@ -6,10 +6,10 @@ from pydantic import ValidationError
 
 from application.rest.cache_service.cache_service import CacheService
 from application.rest.schema.product import (
+    ProductRequest,
     ProductResponse,
     ProductResponseList,
-    ProductSchema,
-    UpdateProductSchema,
+    UpdateProductRequest,
 )
 from src.plugins.jwt_plugin import auth_token
 from src.repository.postgres.postgresrepo_product import PostgresRepoProduct
@@ -31,12 +31,8 @@ async def product_create(request: Request) -> ProductResponse:
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        data = ProductSchema.model_validate(
-            json.loads(http_request.data)
-        ).model_dump()
-        data['client'] = auth_token.decode_jwt(
-            http_request.headers['Authorization']
-        )
+        data = ProductRequest.model_validate(http_request.json).model_dump()
+        data['client'] = auth_token.decode_jwt(http_request)
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),
@@ -65,7 +61,7 @@ async def product_list(request: Request) -> ProductResponseList:
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        client = auth_token.decode_jwt(http_request.headers['Authorization'])
+        client = auth_token.decode_jwt(http_request)
     except auth_token.jwt.ExpiredSignatureError as e:
         return Response(
             json.dumps({'error': str(e)}),
@@ -84,7 +80,6 @@ async def product_list(request: Request) -> ProductResponseList:
             qrystr_params['filters'][arg.replace('filter_', '')] = values
 
     request_obj = build_product_list_request(qrystr_params['filters'])
-
     repo = PostgresRepoProduct()
     response = product_list_use_case(repo, request_obj)
 
@@ -100,10 +95,10 @@ async def product_update(request: Request) -> ProductResponse:
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        data = UpdateProductSchema.model_validate(
-            json.loads(http_request.data)
-        )
-        client = auth_token.decode_jwt(http_request.headers['Authorization'])
+        data = UpdateProductRequest.model_validate(
+            http_request.json
+        ).model_dump()
+        data['client'] = auth_token.decode_jwt(http_request)
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),
@@ -118,12 +113,8 @@ async def product_update(request: Request) -> ProductResponse:
         )
 
     request_obj = build_update_product_request(data.model_dumps())
-
     repo = PostgresRepoProduct()
     response = product_update_use_case(repo, request_obj)
-
-    if response.type == 200:
-        CacheService.update_client_items(client['client_id'])
 
     return Response(
         json.dumps(response.value, cls=ProductJsonEncoder),

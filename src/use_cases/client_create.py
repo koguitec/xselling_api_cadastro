@@ -40,6 +40,6 @@ def client_create_use_case(repo, request):
 
         repo.create_token(auth_token.to_dict())
 
-        return ResponseSuccess(client)
+        return ResponseSuccess(auth_token)
     except Exception as exc:
         return ResponseFailure(ResponseTypes.SYSTEM_ERROR, exc)

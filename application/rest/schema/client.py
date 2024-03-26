@@ -12,7 +12,7 @@ class ClientRequest(BaseModel):
         extra = 'forbid'
 
 
-class UpdateClientSchema(BaseModel):
+class UpdateClientRequest(BaseModel):
     """Schema validation for Client"""
 
     id: int

@@ -29,16 +29,16 @@ async def transaction_create(request: Request) -> list[TransactionResponse]:
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        client = auth_token.decode_jwt(http_request.headers['Authorization'])
+        data = TransactionRequest.model_validate(
+            http_request.json
+        ).model_dump()
+        data['client'] = auth_token.decode_jwt(http_request)
     except auth_token.jwt.ExpiredSignatureError as e:
         return Response(
             json.dumps({'error': {'type': 'Autenticação', 'message': str(e)}}),
             media_type='application/json',
             status_code=401,
         )
-
-    try:
-        data = TransactionRequest.model_validate(json.loads(http_request.data))
     except ValidationError as e:
         return JSONResponse(
             format_pydantic_error(e),
@@ -46,11 +46,7 @@ async def transaction_create(request: Request) -> list[TransactionResponse]:
             status_code=422,
         )
 
-    transaction_dict = data.model_dump()
-    transaction_dict['client_id'] = client['client_id']
-
-    request_obj = build_transaction_create_request(transaction_dict)
-
+    request_obj = build_transaction_create_request(data)
     repo = PostgresRepoTransaction()
     response = transaction_create_use_case(repo, request_obj)
 
@@ -66,7 +62,7 @@ async def transaction_list(request: Request) -> TransactionResponseList:
     http_request: HttpRequest = await request_adapter(request)
 
     try:
-        client = auth_token.decode_jwt(http_request.headers['Authorization'])
+        client = auth_token.decode_jwt(http_request)
     except auth_token.jwt.ExpiredSignatureError:
         raise
 

@@ -26,8 +26,11 @@ from application.rest.schema.category import (
     CategoryRequest,
     UpdateCategoryRequest,
 )
-from application.rest.schema.client import ClientRequest, UpdateClientSchema
-from application.rest.schema.product import ProductSchema, UpdateProductSchema
+from application.rest.schema.client import ClientRequest, UpdateClientRequest
+from application.rest.schema.product import (
+    ProductRequest,
+    UpdateProductRequest,
+)
 from application.rest.schema.transaction import TransactionRequest
 from src.validators.recomendacao import (
     BadRequestError,
@@ -120,7 +123,7 @@ router.add_api_route(
         'requestBody': {
             'content': {
                 'application/json': {
-                    'schema': UpdateClientSchema.model_json_schema()
+                    'schema': UpdateClientRequest.model_json_schema()
                 }
             },
             'required': True,
@@ -239,7 +242,7 @@ router.add_api_route(
         'requestBody': {
             'content': {
                 'application/json': {
-                    'schema': ProductSchema.model_json_schema()
+                    'schema': ProductRequest.model_json_schema()
                 }
             },
             'required': True,
@@ -300,7 +303,7 @@ router.add_api_route(
         'requestBody': {
             'content': {
                 'application/json': {
-                    'schema': UpdateProductSchema.model_json_schema()
+                    'schema': UpdateProductRequest.model_json_schema()
                 }
             },
             'required': True,
