@@ -25,7 +25,7 @@ class AuthTokenPlugin:
 
     def decode_jwt(self, http_request: HttpRequest) -> dict:
         return self.jwt.decode(
-            http_request.header['Authorization'], self.SECRET, self.ALGORITHM
+            http_request.headers['Authorization'], self.SECRET, self.ALGORITHM
         )
 
     def validate_token(self, http_request: HttpRequest):

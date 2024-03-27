@@ -62,7 +62,7 @@ async def product_list(request: Request) -> ProductResponseList:
         'filters': {},
     }
 
-    qrystr_params['filters']['client_id'] = client['client_id']
+    qrystr_params['filters']['client_id__eq'] = client['client_id']
 
     for arg, values in http_request.query_params.items():
         if arg.startswith('filter_'):
@@ -92,7 +92,7 @@ async def product_update(request: Request) -> ProductResponse:
         http_response = handle_errors(exc)
         return JSONResponse(http_response.body, http_response.status_code)
 
-    request_obj = build_update_product_request(data.model_dumps())
+    request_obj = build_update_product_request(data)
     repo = PostgresRepoProduct()
     response = product_update_use_case(repo, request_obj)
 

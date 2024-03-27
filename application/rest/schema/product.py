@@ -26,7 +26,7 @@ class UpdateProductRequest(BaseModel):
     nome: str
     descricao: str
     sku: str
-    ativo: str
+    ativo: bool
 
     class ConfigDict:
         extra = 'forbid'

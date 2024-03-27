@@ -23,7 +23,24 @@ def product_update_use_case(repo, request):
     if not request:
         return build_response_from_invalid_request(request)
     try:
-        product = repo.update_product(request.data)
+        product: list = request.data
+        client: str = request.data.pop('client')
+
+        product_exists = repo.list_product(
+            filters={
+                'id__eq': product['id'],
+                'sku__eq': product['sku'],
+                'client_id__eq': client['client_id'],
+            }
+        )
+
+        if len(product_exists) == 0:
+            return ResponseFailure(
+                ResponseTypes.DOMAIN_ERROR,
+                f'Produto: {product["nome"]} não encontrado',
+            )
+
+        product = repo.update_product(product)
         return ResponseSuccess(product)
     except Exception as exc:
         return ResponseFailure(ResponseTypes.SYSTEM_ERROR, exc)
