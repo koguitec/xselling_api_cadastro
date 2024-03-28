@@ -32,6 +32,7 @@ def category_create_use_case(repo: PostgresRepoProduct, request):
                 'descricao__in': [
                     category['descricao'] for category in categories
                 ],
+                'client_id__eq': client_id
             }
         )
         if category_exists:
@@ -43,9 +44,6 @@ def category_create_use_case(repo: PostgresRepoProduct, request):
                 f'Categoria(s): {categories_names} já cadastrada(s)',
             )
         result = repo.create_category(categories)
-        CacheService().update_client_items_in_cache(
-            client_id=client_id, items=categories
-        )
         return ResponseSuccess(result, type_='insertion')
     except Exception as exc:
         return ResponseFailure(ResponseTypes.SYSTEM_ERROR, exc)

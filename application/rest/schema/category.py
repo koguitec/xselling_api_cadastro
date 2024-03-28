@@ -5,7 +5,6 @@ class Category(BaseModel):
     """Schema validatation for category"""
 
     descricao: str
-    client_id: int
 
 
 class CategoryRequest(BaseModel):
